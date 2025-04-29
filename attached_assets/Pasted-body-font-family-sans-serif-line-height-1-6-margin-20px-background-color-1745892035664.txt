@@ -1,0 +1,143 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #333;
+}
+
+#add-form {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="date"] {
+    width: calc(100% - 22px); /* padding+border */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+button {
+    display: inline-block; /* Changed from block to inline-block */
+    background-color: #5cb85c;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 5px; /* Add some margin between buttons */
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+#cancel-edit-button {
+    background-color: #f0ad4e;
+}
+#cancel-edit-button:hover {
+    background-color: #eea236;
+}
+
+
+#item-list {
+    list-style: none;
+    padding: 0;
+}
+
+#item-list li {
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+}
+
+#item-list .item-info {
+    flex-grow: 1; /* Allow info section to take available space */
+    margin-right: 10px; /* Add space between info and buttons */
+}
+
+
+#item-list .item-info span {
+    display: block; /* Display name and date on separate lines */
+    margin-bottom: 5px; /* Space between name and date */
+}
+#item-list .item-info .item-name {
+    font-weight: bold;
+}
+#item-list .item-info .item-date {
+    font-size: 0.9em;
+    color: #555;
+}
+
+
+.item-actions button {
+    background-color: #d9534f;
+    font-size: 0.8em;
+    padding: 5px 10px;
+    margin-left: 5px; /* Space between buttons */
+}
+
+.item-actions .edit-btn {
+     background-color: #5bc0de;
+}
+.item-actions .edit-btn:hover {
+    background-color: #46b8da;
+}
+.item-actions .delete-btn:hover {
+    background-color: #c9302c;
+}
+
+/* --- 期限警告スタイル --- */
+.near-expiry {
+    border-left: 5px solid #f0ad4e; /* Yellow */
+}
+.near-expiry .item-date {
+    color: #f0ad4e;
+    font-weight: bold;
+}
+
+.today-expiry {
+    border-left: 5px solid #d9534f; /* Red */
+}
+.today-expiry .item-date {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+.expired {
+    border-left: 5px solid #777; /* Gray */
+    opacity: 0.8;
+}
+.expired .item-name {
+    text-decoration: line-through;
+}
+.expired .item-date {
+    color: #777;
+    font-weight: bold;
+}

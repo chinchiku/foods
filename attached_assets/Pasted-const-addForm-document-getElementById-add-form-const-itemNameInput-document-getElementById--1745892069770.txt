@@ -1,0 +1,221 @@
+const addForm = document.getElementById('add-form');
+const itemNameInput = document.getElementById('item-name');
+const expiryDateInput = document.getElementById('expiry-date');
+const itemList = document.getElementById('item-list');
+const editIdInput = document.getElementById('edit-id');
+const submitButton = document.getElementById('submit-button');
+const cancelEditButton = document.getElementById('cancel-edit-button');
+
+// --- データ管理 ---
+
+// ローカルストレージからデータを読み込む
+function loadItems() {
+    const itemsJSON = localStorage.getItem('foodItems');
+    // データがなければ空配列、あればパースして返す
+    // 各アイテムの日付文字列をDateオブジェクトに変換しておく
+    try {
+        const items = itemsJSON ? JSON.parse(itemsJSON) : [];
+        return items.map(item => ({
+            ...item,
+            expiryDate: new Date(item.expiryDateString) // 日付文字列からDateオブジェクトへ
+        }));
+    } catch (e) {
+        console.error("Error parsing items from localStorage", e);
+        return []; // パースエラー時は空配列を返す
+    }
+}
+
+// ローカルストレージにデータを保存する
+function saveItems(items) {
+     // DateオブジェクトをISO文字列に変換して保存
+    const itemsToSave = items.map(item => ({
+        ...item,
+        expiryDateString: item.expiryDate.toISOString().split('T')[0] // YYYY-MM-DD形式の文字列
+    }));
+    localStorage.setItem('foodItems', JSON.stringify(itemsToSave));
+}
+
+let foodItems = loadItems();
+
+// --- 表示関連 ---
+
+// 残り日数を計算し、状態を返す
+function calculateRemainingDays(expiryDate) {
+    const today = new Date();
+    // 時刻情報を除去して日付のみで比較
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate); // 入力がDateオブジェクトであることを期待
+    expiry.setHours(0, 0, 0, 0);
+
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+        return `期限切れ (${Math.abs(diffDays)}日経過)`;
+    } else if (diffDays === 0) {
+        return "本日まで";
+    } else {
+        return `あと${diffDays}日`;
+    }
+}
+
+// 期限の状態に応じたCSSクラスを返す
+function getExpiryClass(expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate); // 入力がDateオブジェクトであることを期待
+    expiry.setHours(0, 0, 0, 0);
+
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+        return "expired"; // 期限切れ
+    } else if (diffDays === 0) {
+        return "today-expiry"; // 当日期限
+    } else if (diffDays <= 3) { // 例: 3日以内
+        return "near-expiry";   // 期限間近
+    }
+    return ""; // 通常
+}
+
+
+// 食品リストを描画する
+function renderItems() {
+    itemList.innerHTML = ''; // 一旦リストを空にする
+
+    // 期限日が近い順にソート
+    const sortedItems = [...foodItems].sort((a, b) => a.expiryDate - b.expiryDate);
+
+    if (sortedItems.length === 0) {
+        itemList.innerHTML = '<li>登録されている食品はありません。</li>';
+        return;
+    }
+
+    sortedItems.forEach(item => {
+        const li = document.createElement('li');
+        li.dataset.id = item.id; // idをdata属性として保持
+
+        const remainingDays = calculateRemainingDays(item.expiryDate);
+        const expiryClass = getExpiryClass(item.expiryDate);
+        if (expiryClass) {
+            li.classList.add(expiryClass);
+        }
+
+        // 日付を YYYY-MM-DD 形式で表示
+        const formattedExpiryDate = item.expiryDate.toISOString().split('T')[0];
+
+        li.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${item.name}</span>
+                <span class="item-date">期限: ${formattedExpiryDate} (${remainingDays})</span>
+            </div>
+            <div class="item-actions">
+                <button class="edit-btn">編集</button>
+                <button class="delete-btn">削除</button>
+            </div>
+        `;
+
+        // 削除ボタンのイベントリスナー
+        li.querySelector('.delete-btn').addEventListener('click', () => {
+            deleteItem(item.id);
+        });
+
+        // 編集ボタンのイベントリスナー
+         li.querySelector('.edit-btn').addEventListener('click', () => {
+            startEdit(item.id);
+        });
+
+
+        itemList.appendChild(li);
+    });
+}
+
+// --- イベントハンドラ ---
+
+// フォーム送信処理 (登録または更新)
+function handleSubmit(event) {
+    event.preventDefault(); // デフォルトの送信動作をキャンセル
+
+    const name = itemNameInput.value.trim();
+    const expiryDateValue = expiryDateInput.value; // YYYY-MM-DD形式の文字列
+    const editingId = editIdInput.value; // 編集中IDを取得
+
+    if (!name || !expiryDateValue) {
+        alert('食品名と期限日を入力してください。');
+        return;
+    }
+    const expiryDate = new Date(expiryDateValue); // 文字列からDateオブジェクトへ
+
+     if (editingId) {
+         // --- 更新処理 ---
+         const itemIndex = foodItems.findIndex(item => item.id === editingId);
+         if(itemIndex > -1){
+            foodItems[itemIndex].name = name;
+            foodItems[itemIndex].expiryDate = expiryDate; // Dateオブジェクトで更新
+         }
+         // 編集中IDをクリア
+         editIdInput.value = '';
+         submitButton.textContent = '登録'; // ボタンテキストを戻す
+         cancelEditButton.style.display = 'none'; // キャンセルボタンを非表示
+
+     } else {
+        // --- 新規登録処理 ---
+        const newItem = {
+            // 簡単なユニークIDとしてタイムスタンプを使用（より厳密にはUUIDなど）
+            id: Date.now().toString(),
+            name: name,
+            expiryDate: expiryDate // Dateオブジェクトで保持
+        };
+        foodItems.push(newItem);
+    }
+
+    saveItems(foodItems); // 変更を保存
+    renderItems(); // リストを再描画
+
+    // フォームをリセット
+    addForm.reset();
+    itemNameInput.focus(); // 次の入力のためにフォーカス
+}
+
+// 削除処理
+function deleteItem(id) {
+    if (!confirm('この食品を削除してもよろしいですか？')) {
+        return;
+    }
+    foodItems = foodItems.filter(item => item.id !== id);
+    saveItems(foodItems);
+    renderItems();
+}
+
+// 編集開始処理
+function startEdit(id) {
+    const itemToEdit = foodItems.find(item => item.id === id);
+    if (!itemToEdit) return;
+
+    // フォームに現在の値を設定
+    itemNameInput.value = itemToEdit.name;
+    // 日付は YYYY-MM-DD 形式で設定
+    expiryDateInput.value = itemToEdit.expiryDate.toISOString().split('T')[0];
+    editIdInput.value = id; // 編集中IDを隠しフィールドに設定
+
+    // UIを変更
+    submitButton.textContent = '更新'; // ボタンテキストを変更
+    cancelEditButton.style.display = 'inline-block'; // キャンセルボタンを表示
+    addForm.scrollIntoView({ behavior: 'smooth' }); // フォームにスクロール
+    itemNameInput.focus();
+}
+
+// 編集キャンセル処理
+function cancelEdit() {
+    editIdInput.value = ''; // 編集中IDをクリア
+    submitButton.textContent = '登録'; // ボタンテキストを戻す
+    cancelEditButton.style.display = 'none'; // キャンセルボタンを非表示
+    addForm.reset(); // フォームをリセット
+}
+
+
+// --- 初期化 ---
+addForm.addEventListener('submit', handleSubmit);
+cancelEditButton.addEventListener('click', cancelEdit);
+document.addEventListener('DOMContentLoaded', renderItems); // ページ読み込み完了時にリストを描画
