@@ -40,11 +40,11 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
   }
   
   return (
-    <li className={`flex flex-col bg-white rounded-lg shadow-sm overflow-hidden ${itemBorderClass}`}>
+    <li className={`flex flex-col bg-white rounded-lg shadow-sm overflow-hidden ${itemBorderClass} transition-all duration-300 hover:shadow-md`}>
       <div className="p-4 flex justify-between items-start">
         <div className="item-info">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`item-name text-lg font-medium ${nameClass}`}>
+            <span className={`item-name text-lg ${nameClass}`}>
               {item.name}
             </span>
             {locationName && (
@@ -73,7 +73,7 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
           <Button
             onClick={onEdit}
             variant="outline"
-            className="edit-btn bg-sky-500 hover:bg-sky-600 text-white text-sm px-3 py-1 rounded mr-2"
+            className="edit-btn bg-sky-500 hover:bg-sky-600 text-white text-sm px-3 py-1 rounded mr-2 transition-colors"
             size="sm"
           >
             編集
@@ -81,7 +81,7 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
           <Button
             onClick={onDelete}
             variant="destructive"
-            className="delete-btn text-sm px-3 py-1 rounded"
+            className="delete-btn text-sm px-3 py-1 rounded transition-colors"
             size="sm"
           >
             削除

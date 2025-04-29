@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import FoodItemForm from "@/components/FoodItemForm";
 import { FoodItem } from "@/types";
 import { useLocation } from "wouter";
+import VeggiesImage from "../assets/veggies.svg";
 
 interface RegisterPageProps {
   editingItem: FoodItem | null;
@@ -26,21 +27,21 @@ export default function RegisterPage({
   return (
     <div className="max-w-md mx-auto p-4 pb-20">
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-slate-800 mb-6">食品登録</h2>
-        
-        <div className="flex justify-center mb-6">
-          <img 
-            src="/src/assets/veggies.svg" 
-            alt="食材イラスト" 
-            className="w-full max-w-sm opacity-90" 
-          />
-        </div>
+        <h2 className="text-xl font-bold mb-6">食品登録</h2>
         
         <FoodItemForm
           onSubmit={onSubmit}
           editingItem={editingItem}
           onCancelEdit={onCancelEdit}
         />
+        
+        <div className="flex justify-center mt-8">
+          <img 
+            src={VeggiesImage} 
+            alt="食材イラスト" 
+            className="w-full max-w-sm opacity-90" 
+          />
+        </div>
       </div>
     </div>
   );

@@ -112,16 +112,25 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
   return (
     <div className="max-w-md mx-auto p-4 pb-20">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-slate-800">登録済み食品一覧</h2>
+        <h2 className="text-xl font-bold">登録済み食品一覧</h2>
         
         <div className="flex gap-2">
-          <Button onClick={handleRegisterClick} variant="outline" size="sm">
+          <Button 
+            onClick={handleRegisterClick} 
+            variant="outline" 
+            size="sm"
+            className="bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-all duration-300"
+          >
             新規登録
           </Button>
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-gradient-to-r from-sky-50 to-blue-50 hover:from-sky-100 hover:to-blue-100 transition-all duration-300"
+              >
                 <Settings className="h-4 w-4 mr-1" />
                 保管場所管理
               </Button>
@@ -216,10 +225,14 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
       
       <div className="mb-6">
         <Tabs defaultValue="all" onValueChange={(value) => setSelectedLocationId(value === "all" ? null : value)}>
-          <TabsList className="w-full flex overflow-x-auto mb-4">
-            <TabsTrigger value="all" className="flex-1">すべて</TabsTrigger>
+          <TabsList className="w-full flex overflow-x-auto mb-4 p-1 bg-white bg-opacity-60 backdrop-blur-sm rounded-lg">
+            <TabsTrigger value="all" className="flex-1 rounded-md transition-all duration-300">すべて</TabsTrigger>
             {locations.map(location => (
-              <TabsTrigger key={location.id} value={location.id} className="flex-1">
+              <TabsTrigger 
+                key={location.id} 
+                value={location.id} 
+                className="flex-1 rounded-md transition-all duration-300"
+              >
                 {location.name}
               </TabsTrigger>
             ))}
@@ -235,9 +248,9 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
             ) : (
               <div>
                 <Tabs defaultValue="expiry" className="mt-4">
-                  <TabsList className="w-full mb-4">
-                    <TabsTrigger value="expiry" className="flex-1">期限登録済み</TabsTrigger>
-                    <TabsTrigger value="no-expiry" className="flex-1">期限なし食品</TabsTrigger>
+                  <TabsList className="w-full mb-4 p-1 bg-white bg-opacity-60 backdrop-blur-sm rounded-lg">
+                    <TabsTrigger value="expiry" className="flex-1 rounded-md transition-all duration-300">期限登録済み</TabsTrigger>
+                    <TabsTrigger value="no-expiry" className="flex-1 rounded-md transition-all duration-300">期限なし食品</TabsTrigger>
                   </TabsList>
                   
                   {/* 期限が登録されている食品 */}
@@ -295,9 +308,9 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
               ) : (
                 <div>
                   <Tabs defaultValue="expiry" className="mt-4">
-                    <TabsList className="w-full mb-4">
-                      <TabsTrigger value="expiry" className="flex-1">期限登録済み</TabsTrigger>
-                      <TabsTrigger value="no-expiry" className="flex-1">期限なし食品</TabsTrigger>
+                    <TabsList className="w-full mb-4 p-1 bg-white bg-opacity-60 backdrop-blur-sm rounded-lg">
+                      <TabsTrigger value="expiry" className="flex-1 rounded-md transition-all duration-300">期限登録済み</TabsTrigger>
+                      <TabsTrigger value="no-expiry" className="flex-1 rounded-md transition-all duration-300">期限なし食品</TabsTrigger>
                     </TabsList>
                     
                     {/* 期限が登録されている食品 */}
