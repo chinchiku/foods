@@ -49,13 +49,15 @@ export default function Home() {
     setEditingItem(null);
   };
 
-  const handleSubmit = (name: string, expiryDate: Date, locationId: string) => {
+  const handleSubmit = (name: string, expiryDate: Date | undefined, locationId: string, hasNoExpiry: boolean, registrationDate: Date) => {
     if (editingItem) {
       updateFoodItem({
         ...editingItem,
         name,
         expiryDate,
         locationId,
+        hasNoExpiry,
+        registrationDate
       });
       setEditingItem(null);
     } else {
@@ -64,6 +66,8 @@ export default function Home() {
         name,
         expiryDate,
         locationId,
+        hasNoExpiry,
+        registrationDate
       });
     }
   };

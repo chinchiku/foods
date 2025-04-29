@@ -56,6 +56,10 @@
     @apply font-sans antialiased bg-background text-foreground;
     line-height: 1.6;
     margin: 0;
+    background-image: url('./assets/food-pattern.svg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
   }
 }
 
