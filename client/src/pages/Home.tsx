@@ -87,24 +87,24 @@ export default function Home() {
 
   return (
     <div className="max-w-md mx-auto p-4 pb-20">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-center text-slate-800 mt-4">
-          食品期限管理
+      <header className="mb-6 bg-white bg-opacity-80 backdrop-blur-sm rounded-lg p-4 shadow-sm">
+        <h1 className="font-bold text-center mt-2 mb-4">
+          食品期限管理アプリ
         </h1>
         
-        <div className="flex justify-center gap-1 mt-6 mb-8">
-          <Link href="/" className={`flex-1 flex items-center justify-center gap-1 p-3 rounded-l-md ${location === '/' || location === '/register' ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+        <div className="flex justify-center gap-1 mt-4 mb-2">
+          <Link href="/" className={`flex-1 flex items-center justify-center gap-1 p-3 rounded-l-md transition-all duration-200 ${location === '/' || location === '/register' ? 'bg-primary text-white shadow-md' : 'bg-gray-100 hover:bg-gray-200'}`}>
             <HomeIcon className="h-4 w-4" />
             <span>登録</span>
           </Link>
-          <Link href="/list" className={`flex-1 flex items-center justify-center gap-1 p-3 rounded-r-md ${location === '/list' ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+          <Link href="/list" className={`flex-1 flex items-center justify-center gap-1 p-3 rounded-r-md transition-all duration-200 ${location === '/list' ? 'bg-primary text-white shadow-md' : 'bg-gray-100 hover:bg-gray-200'}`}>
             <ListChecks className="h-4 w-4" />
             <span>一覧</span>
           </Link>
         </div>
       </header>
       
-      <main>
+      <main className="content-bg p-4">
         {renderContent()}
       </main>
     </div>
