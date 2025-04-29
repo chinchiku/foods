@@ -1,0 +1,72 @@
+import type { Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import path from "path";
+import { FoodItem } from "@/types";
+
+// In-memory storage for food items
+let foodItems: FoodItem[] = [];
+let nextId = 1;
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // API routes
+  app.get("/api/food-items", (req: Request, res: Response) => {
+    res.json(foodItems);
+  });
+
+  app.post("/api/food-items", (req: Request, res: Response) => {
+    const { name, expiryDate } = req.body;
+    
+    if (!name || !expiryDate) {
+      return res.status(400).json({ message: "Name and expiry date are required" });
+    }
+    
+    const newItem: FoodItem = {
+      id: String(nextId++),
+      name,
+      expiryDate: new Date(expiryDate),
+    };
+    
+    foodItems.push(newItem);
+    res.status(201).json(newItem);
+  });
+
+  app.put("/api/food-items/:id", (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name, expiryDate } = req.body;
+    
+    if (!name || !expiryDate) {
+      return res.status(400).json({ message: "Name and expiry date are required" });
+    }
+    
+    const itemIndex = foodItems.findIndex(item => item.id === id);
+    
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: "Food item not found" });
+    }
+    
+    const updatedItem: FoodItem = {
+      id,
+      name,
+      expiryDate: new Date(expiryDate),
+    };
+    
+    foodItems[itemIndex] = updatedItem;
+    res.json(updatedItem);
+  });
+
+  app.delete("/api/food-items/:id", (req: Request, res: Response) => {
+    const { id } = req.params;
+    const itemIndex = foodItems.findIndex(item => item.id === id);
+    
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: "Food item not found" });
+    }
+    
+    foodItems.splice(itemIndex, 1);
+    res.status(204).end();
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
