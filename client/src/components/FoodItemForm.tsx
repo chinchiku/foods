@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FoodItem, StorageLocation } from "@/types";
 import { useStorageLocations } from "@/hooks/useStorageLocations";
 import { Loader2, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FoodItemFormProps {
-  onSubmit: (name: string, expiryDate: Date, locationId: string) => void;
+  onSubmit: (name: string, expiryDate: Date | undefined, locationId: string, hasNoExpiry: boolean, registrationDate: Date) => void;
   editingItem: FoodItem | null;
   onCancelEdit: () => void;
 }
@@ -22,20 +23,34 @@ export default function FoodItemForm({
   const { locations, isLoading, addLocation } = useStorageLocations();
   const [name, setName] = useState("");
   const [expiryDateString, setExpiryDateString] = useState("");
+  const [registrationDateString, setRegistrationDateString] = useState("");
   const [locationId, setLocationId] = useState("");
   const [newLocationName, setNewLocationName] = useState("");
   const [showAddLocation, setShowAddLocation] = useState(false);
+  const [hasNoExpiry, setHasNoExpiry] = useState(false);
 
-  // Set today's date as default when the component mounts
+  // 現在の日付を文字列にフォーマットする
+  const formatDateToString = (date: Date): string => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // コンポーネントマウント時にデフォルトの日付を設定
   useEffect(() => {
+    const today = new Date();
+    
+    // 期限日のデフォルトを設定
     if (!expiryDateString) {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      setExpiryDateString(`${yyyy}-${mm}-${dd}`);
+      setExpiryDateString(formatDateToString(today));
     }
-  }, [expiryDateString]);
+    
+    // 登録日のデフォルトを設定
+    if (!registrationDateString) {
+      setRegistrationDateString(formatDateToString(today));
+    }
+  }, [expiryDateString, registrationDateString]);
 
   // デフォルトの保管場所を設定
   useEffect(() => {
@@ -48,40 +63,69 @@ export default function FoodItemForm({
   useEffect(() => {
     if (editingItem) {
       setName(editingItem.name);
-      setExpiryDateString(editingItem.expiryDate.toISOString().split("T")[0]);
+      
+      if (editingItem.expiryDate) {
+        setExpiryDateString(formatDateToString(editingItem.expiryDate));
+        setHasNoExpiry(false);
+      } else {
+        setHasNoExpiry(true);
+      }
+      
+      setRegistrationDateString(formatDateToString(editingItem.registrationDate));
+      
       if (editingItem.locationId && locations.some(loc => loc.id === editingItem.locationId)) {
         setLocationId(editingItem.locationId);
       }
+
+      setHasNoExpiry(editingItem.hasNoExpiry || false);
     }
   }, [editingItem, locations]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !expiryDateString) {
-      alert("食品名と期限日を入力してください。");
+    if (!name) {
+      alert("食品名を入力してください。");
       return;
     }
     
-    const expiryDate = new Date(expiryDateString);
-    onSubmit(name, expiryDate, locationId);
+    // 期限なしフラグがfalseの場合、期限日が必要
+    if (!hasNoExpiry && !expiryDateString) {
+      alert("期限日を入力してください。");
+      return;
+    }
+    
+    // 登録日は必須
+    if (!registrationDateString) {
+      alert("登録日を入力してください。");
+      return;
+    }
+    
+    const expiryDate = hasNoExpiry ? undefined : new Date(expiryDateString);
+    const registrationDate = new Date(registrationDateString);
+    
+    onSubmit(name, expiryDate, locationId, hasNoExpiry, registrationDate);
     
     // Reset form after submission
     setName("");
     
-    // Only reset date if not editing
+    // Only reset dates if not editing
     if (!editingItem) {
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      setExpiryDateString(`${yyyy}-${mm}-${dd}`);
+      setExpiryDateString(formatDateToString(today));
+      setRegistrationDateString(formatDateToString(today));
+      setHasNoExpiry(false);
       
       // デフォルトの保管場所にリセット
       if (locations.length > 0) {
         setLocationId(locations[0].id);
       }
     }
+  };
+  
+  // 期限なしチェックボックスの変更処理
+  const handleNoExpiryChange = (checked: boolean) => {
+    setHasNoExpiry(checked);
   };
 
   const handleAddLocation = async () => {
@@ -117,16 +161,46 @@ export default function FoodItemForm({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="expiry-date" className="text-sm font-medium text-slate-700">
-              期限日
+            <Label htmlFor="registration-date" className="text-sm font-medium text-slate-700">
+              登録日
             </Label>
+            <Input
+              id="registration-date"
+              type="date"
+              value={registrationDateString}
+              onChange={(e) => setRegistrationDateString(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="expiry-date" className="text-sm font-medium text-slate-700">
+                期限日
+              </Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="no-expiry" 
+                  checked={hasNoExpiry} 
+                  onCheckedChange={handleNoExpiryChange} 
+                />
+                <Label 
+                  htmlFor="no-expiry" 
+                  className="text-sm cursor-pointer"
+                >
+                  期限なし
+                </Label>
+              </div>
+            </div>
             <Input
               id="expiry-date"
               type="date"
               value={expiryDateString}
               onChange={(e) => setExpiryDateString(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              required={!hasNoExpiry}
+              disabled={hasNoExpiry}
+              className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${hasNoExpiry ? 'opacity-50' : ''}`}
             />
           </div>
           

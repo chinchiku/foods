@@ -95,8 +95,10 @@ export function useFoodItems() {
             ? { 
                 id: result.id, 
                 name: result.name, 
-                expiryDate: new Date(result.expiryDate),
-                locationId: result.locationId
+                expiryDate: result.expiryDate ? new Date(result.expiryDate) : undefined,
+                registrationDate: new Date(result.registrationDate),
+                locationId: result.locationId,
+                hasNoExpiry: result.hasNoExpiry
               } 
             : item
         )
