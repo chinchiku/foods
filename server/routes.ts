@@ -8,14 +8,31 @@ import { FoodItem } from "@/types";
 let foodItems: FoodItem[] = [];
 let nextId = 1;
 
+// 保管場所のデータ
+interface StorageLocation {
+  id: string;
+  name: string;
+}
+
+// デフォルトの保管場所
+let storageLocations: StorageLocation[] = [
+  { id: "1", name: "冷蔵庫" },
+  { id: "2", name: "冷凍庫" },
+  { id: "3", name: "パントリー" },
+  { id: "4", name: "食器棚" },
+  { id: "5", name: "その他" }
+];
+
+let locationNextId = 6;
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes
+  // 食品アイテムのAPI routes
   app.get("/api/food-items", (req: Request, res: Response) => {
     // クエリパラメータから特定の保管場所が指定されている場合はフィルタリング
-    const location = req.query.location as string | undefined;
+    const locationId = req.query.locationId as string | undefined;
     
-    if (location) {
-      const filteredItems = foodItems.filter(item => item.location === location);
+    if (locationId) {
+      const filteredItems = foodItems.filter(item => item.locationId === locationId);
       return res.json(filteredItems);
     }
     
@@ -23,7 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/food-items", (req: Request, res: Response) => {
-    const { name, expiryDate, location } = req.body;
+    const { name, expiryDate, locationId } = req.body;
     
     if (!name || !expiryDate) {
       return res.status(400).json({ message: "Name and expiry date are required" });
@@ -33,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       id: String(nextId++),
       name,
       expiryDate: new Date(expiryDate),
-      location
+      locationId
     };
     
     foodItems.push(newItem);
@@ -42,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/food-items/:id", (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, expiryDate, location } = req.body;
+    const { name, expiryDate, locationId } = req.body;
     
     if (!name || !expiryDate) {
       return res.status(400).json({ message: "Name and expiry date are required" });
@@ -58,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       id,
       name,
       expiryDate: new Date(expiryDate),
-      location
+      locationId
     };
     
     foodItems[itemIndex] = updatedItem;
@@ -77,13 +94,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
+  // 保管場所のAPI routes
+  app.get("/api/storage-locations", (_req: Request, res: Response) => {
+    res.json(storageLocations);
+  });
+
+  app.post("/api/storage-locations", (req: Request, res: Response) => {
+    const { name } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: "Location name is required" });
+    }
+    
+    const newLocation: StorageLocation = {
+      id: String(locationNextId++),
+      name
+    };
+    
+    storageLocations.push(newLocation);
+    res.status(201).json(newLocation);
+  });
+
+  app.put("/api/storage-locations/:id", (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: "Location name is required" });
+    }
+    
+    const locationIndex = storageLocations.findIndex(loc => loc.id === id);
+    
+    if (locationIndex === -1) {
+      return res.status(404).json({ message: "Storage location not found" });
+    }
+    
+    const updatedLocation: StorageLocation = {
+      id,
+      name
+    };
+    
+    storageLocations[locationIndex] = updatedLocation;
+    res.json(updatedLocation);
+  });
+
+  app.delete("/api/storage-locations/:id", (req: Request, res: Response) => {
+    const { id } = req.params;
+    
+    // 保管場所が使用されているかチェック
+    const isLocationInUse = foodItems.some(item => item.locationId === id);
+    
+    if (isLocationInUse) {
+      return res.status(400).json({ 
+        message: "This storage location is in use and cannot be deleted. Remove all items from this location first." 
+      });
+    }
+    
+    const locationIndex = storageLocations.findIndex(loc => loc.id === id);
+    
+    if (locationIndex === -1) {
+      return res.status(404).json({ message: "Storage location not found" });
+    }
+    
+    storageLocations.splice(locationIndex, 1);
+    res.status(204).end();
+  });
+
   // 保管場所ごとの食品アイテム数を取得するエンドポイント
   app.get("/api/location-stats", (req: Request, res: Response) => {
     const stats: Record<string, number> = {};
     
     foodItems.forEach(item => {
-      const location = item.location || "未分類";
-      stats[location] = (stats[location] || 0) + 1;
+      const locationId = item.locationId || "未分類";
+      stats[locationId] = (stats[locationId] || 0) + 1;
     });
     
     res.json(stats);

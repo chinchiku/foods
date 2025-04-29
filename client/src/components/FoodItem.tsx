@@ -1,7 +1,8 @@
-import { FoodItem as FoodItemType } from "@/types";
+import { FoodItem as FoodItemType, StorageLocation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getExpiryClass, getExpiryTextClass, calculateRemainingDays } from "@/utils/dateUtils";
+import { useStorageLocations } from "@/hooks/useStorageLocations";
 
 interface FoodItemProps {
   item: FoodItemType;
@@ -10,10 +11,16 @@ interface FoodItemProps {
 }
 
 export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
+  const { locations } = useStorageLocations();
   const expiryClass = getExpiryClass(item.expiryDate);
   const textClass = getExpiryTextClass(item.expiryDate);
   const remainingDays = calculateRemainingDays(item.expiryDate);
   const formattedExpiryDate = item.expiryDate.toISOString().split("T")[0];
+  
+  // 保管場所名を取得
+  const locationName = item.locationId 
+    ? locations.find(loc => loc.id === item.locationId)?.name || "不明な場所"
+    : "未分類";
   
   // Check if expired for additional styling
   const isExpired = item.expiryDate < new Date(new Date().setHours(0, 0, 0, 0));
@@ -27,9 +34,9 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
             <span className={`item-name text-lg font-medium ${nameClass}`}>
               {item.name}
             </span>
-            {item.location && (
+            {locationName && (
               <Badge variant="outline" className="bg-slate-100 text-xs">
-                {item.location}
+                {locationName}
               </Badge>
             )}
           </div>

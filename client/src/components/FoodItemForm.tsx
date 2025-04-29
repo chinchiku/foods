@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FoodItem, storageLocations } from "@/types";
+import { FoodItem, StorageLocation } from "@/types";
+import { useStorageLocations } from "@/hooks/useStorageLocations";
+import { Loader2, Plus } from "lucide-react";
 
 interface FoodItemFormProps {
-  onSubmit: (name: string, expiryDate: Date, location: string) => void;
+  onSubmit: (name: string, expiryDate: Date, locationId: string) => void;
   editingItem: FoodItem | null;
   onCancelEdit: () => void;
 }
@@ -17,9 +19,12 @@ export default function FoodItemForm({
   editingItem, 
   onCancelEdit 
 }: FoodItemFormProps) {
+  const { locations, isLoading, addLocation } = useStorageLocations();
   const [name, setName] = useState("");
   const [expiryDateString, setExpiryDateString] = useState("");
-  const [location, setLocation] = useState(storageLocations[0]);
+  const [locationId, setLocationId] = useState("");
+  const [newLocationName, setNewLocationName] = useState("");
+  const [showAddLocation, setShowAddLocation] = useState(false);
 
   // Set today's date as default when the component mounts
   useEffect(() => {
@@ -32,16 +37,23 @@ export default function FoodItemForm({
     }
   }, [expiryDateString]);
 
+  // デフォルトの保管場所を設定
+  useEffect(() => {
+    if (locations.length > 0 && !locationId) {
+      setLocationId(locations[0].id);
+    }
+  }, [locations, locationId]);
+
   // When an item is set for editing, populate the form
   useEffect(() => {
     if (editingItem) {
       setName(editingItem.name);
       setExpiryDateString(editingItem.expiryDate.toISOString().split("T")[0]);
-      if (editingItem.location) {
-        setLocation(editingItem.location);
+      if (editingItem.locationId && locations.some(loc => loc.id === editingItem.locationId)) {
+        setLocationId(editingItem.locationId);
       }
     }
-  }, [editingItem]);
+  }, [editingItem, locations]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +64,7 @@ export default function FoodItemForm({
     }
     
     const expiryDate = new Date(expiryDateString);
-    onSubmit(name, expiryDate, location);
+    onSubmit(name, expiryDate, locationId);
     
     // Reset form after submission
     setName("");
@@ -64,7 +76,25 @@ export default function FoodItemForm({
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const dd = String(today.getDate()).padStart(2, "0");
       setExpiryDateString(`${yyyy}-${mm}-${dd}`);
-      setLocation(storageLocations[0]); // デフォルトの保管場所にリセット
+      
+      // デフォルトの保管場所にリセット
+      if (locations.length > 0) {
+        setLocationId(locations[0].id);
+      }
+    }
+  };
+
+  const handleAddLocation = async () => {
+    if (!newLocationName.trim()) {
+      alert("保管場所名を入力してください。");
+      return;
+    }
+
+    const newLocation = await addLocation(newLocationName);
+    if (newLocation) {
+      setLocationId(newLocation.id);
+      setNewLocationName("");
+      setShowAddLocation(false);
     }
   };
 
@@ -101,21 +131,60 @@ export default function FoodItemForm({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-sm font-medium text-slate-700">
-              保管場所
-            </Label>
-            <Select value={location} onValueChange={setLocation}>
-              <SelectTrigger id="location" className="w-full">
-                <SelectValue placeholder="保管場所を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {storageLocations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="location" className="text-sm font-medium text-slate-700">
+                保管場所
+              </Label>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowAddLocation(!showAddLocation)}
+                className="text-xs"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                新規追加
+              </Button>
+            </div>
+            
+            {isLoading ? (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : showAddLocation ? (
+              <div className="flex gap-2">
+                <Input
+                  value={newLocationName}
+                  onChange={(e) => setNewLocationName(e.target.value)}
+                  placeholder="新しい保管場所名"
+                  className="flex-1"
+                />
+                <Button type="button" onClick={handleAddLocation} size="sm">
+                  追加
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowAddLocation(false)}
+                  size="sm"
+                >
+                  キャンセル
+                </Button>
+              </div>
+            ) : (
+              <Select value={locationId} onValueChange={setLocationId}>
+                <SelectTrigger id="location" className="w-full">
+                  <SelectValue placeholder="保管場所を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           
           <div className="flex gap-2">
