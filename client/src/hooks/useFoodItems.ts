@@ -6,6 +6,7 @@ interface ApiResponse {
   id: string;
   name: string;
   expiryDate: string;
+  locationId?: string;
 }
 
 export function useFoodItems() {
@@ -58,7 +59,8 @@ export function useFoodItems() {
       setFoodItems(prev => [...prev, { 
         id: addedItem.id, 
         name: addedItem.name, 
-        expiryDate: new Date(addedItem.expiryDate) 
+        expiryDate: new Date(addedItem.expiryDate),
+        locationId: addedItem.locationId
       }]);
     } catch (err) {
       console.error('Error adding food item:', err);
@@ -88,7 +90,8 @@ export function useFoodItems() {
             ? { 
                 id: result.id, 
                 name: result.name, 
-                expiryDate: new Date(result.expiryDate) 
+                expiryDate: new Date(result.expiryDate),
+                locationId: result.locationId
               } 
             : item
         )

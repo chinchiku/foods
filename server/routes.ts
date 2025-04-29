@@ -140,13 +140,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/storage-locations/:id", (req: Request, res: Response) => {
     const { id } = req.params;
+    const { forceDelete } = req.query;
     
     // 保管場所が使用されているかチェック
     const isLocationInUse = foodItems.some(item => item.locationId === id);
     
-    if (isLocationInUse) {
+    // もし使用中で、forceDeleteフラグが設定されていなければエラーを返す
+    if (isLocationInUse && forceDelete !== 'true') {
       return res.status(400).json({ 
-        message: "This storage location is in use and cannot be deleted. Remove all items from this location first." 
+        message: "この保管場所は現在使用中です。それでも削除しますか？", 
+        itemsCount: foodItems.filter(item => item.locationId === id).length 
       });
     }
     
@@ -154,6 +157,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     if (locationIndex === -1) {
       return res.status(404).json({ message: "Storage location not found" });
+    }
+    
+    // 強制削除の場合、関連する食品アイテムの保管場所をnullに設定
+    if (isLocationInUse && forceDelete === 'true') {
+      foodItems.forEach(item => {
+        if (item.locationId === id) {
+          item.locationId = undefined;
+        }
+      });
     }
     
     storageLocations.splice(locationIndex, 1);

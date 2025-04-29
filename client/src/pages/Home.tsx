@@ -91,8 +91,36 @@ export default function Home() {
   };
 
   const handleDeleteLocation = async (id: string) => {
-    if (confirm("この保管場所を削除してもよろしいですか？")) {
+    try {
+      // まず、通常の削除を試みる
       await deleteLocation(id);
+    } catch (error: any) {
+      // 応答がある場合のみ処理
+      if (!error.response) {
+        console.error('Error deleting location:', error);
+        return;
+      }
+
+      // レスポンスをJSONとして解析
+      try {
+        const responseData = await error.response.json();
+        
+        // 使用中の場合、確認ダイアログを表示
+        if (responseData.message && responseData.itemsCount) {
+          const confirmMessage = `${responseData.message}\n(この保管場所には${responseData.itemsCount}個のアイテムが登録されています)`;
+          
+          if (confirm(confirmMessage)) {
+            // 強制削除を実行
+            try {
+              await deleteLocation(id, true);
+            } catch (forceError) {
+              console.error('Error force deleting location:', forceError);
+            }
+          }
+        }
+      } catch (jsonError) {
+        console.error('Error parsing response:', jsonError);
+      }
     }
   };
 

@@ -78,9 +78,13 @@ export function useStorageLocations() {
   };
 
   // 保管場所を削除
-  const deleteLocation = async (id: string) => {
+  const deleteLocation = async (id: string, forceDelete: boolean = false) => {
     try {
-      const response = await fetch(`/api/storage-locations/${id}`, {
+      const url = forceDelete 
+        ? `/api/storage-locations/${id}?forceDelete=true`
+        : `/api/storage-locations/${id}`;
+        
+      const response = await fetch(url, {
         method: 'DELETE',
       });
       
@@ -88,17 +92,27 @@ export function useStorageLocations() {
         if (response.status === 400) {
           const error = await response.json();
           setError(error.message);
-          return false;
+          // APIからのレスポンスをそのままエラーとして投げる
+          const customError: any = new Error(error.message);
+          customError.response = response;
+          throw customError;
         }
         throw new Error('Failed to delete storage location');
       }
       
+      // 削除成功したら一覧から削除
       setLocations(prev => prev.filter(loc => loc.id !== id));
+      setError(null);
       return true;
     } catch (err) {
+      // エラーはキャッチして上位に伝播
       console.error('Error deleting storage location:', err);
+      if ((err as any).response) {
+        // レスポンスを持つカスタムエラーはそのまま上位に投げる
+        throw err;
+      }
       setError('保管場所の削除に失敗しました');
-      return false;
+      throw err;
     }
   };
 
