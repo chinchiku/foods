@@ -5,10 +5,13 @@ import StatusLegend from "@/components/StatusLegend";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 import { useFoodItems } from "@/hooks/useFoodItems";
 import { FoodItem } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const {
     foodItems,
+    isLoading,
+    error,
     addFoodItem,
     updateFoodItem,
     deleteFoodItem,
@@ -65,11 +68,21 @@ export default function Home() {
       
       <StatusLegend />
       
-      <FoodItemList
-        foodItems={foodItems}
-        onEdit={handleStartEdit}
-        onDelete={setDeleteItemId}
-      />
+      <h2 className="text-xl font-bold text-slate-800 mb-4">登録済み食品一覧</h2>
+      
+      {isLoading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-500 py-4">{error}</div>
+      ) : (
+        <FoodItemList
+          foodItems={foodItems}
+          onEdit={handleStartEdit}
+          onDelete={setDeleteItemId}
+        />
+      )}
       
       {deleteItemId && (
         <DeleteConfirmation

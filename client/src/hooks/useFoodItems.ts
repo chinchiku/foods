@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
 import { FoodItem } from '@/types';
-import { apiRequest } from '@/lib/queryClient';
+
+// APIから返ってくる食品アイテムの型定義
+interface ApiResponse {
+  id: string;
+  name: string;
+  expiryDate: string;
+}
 
 export function useFoodItems() {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch food items
   const fetchFoodItems = async () => {
     setIsLoading(true);
     try {
-      const items = await apiRequest<FoodItem[]>({
-        url: '/api/food-items',
-        method: 'GET',
-      });
+      const response = await fetch('/api/food-items');
+      if (!response.ok) {
+        throw new Error('Failed to fetch food items');
+      }
+      const items: ApiResponse[] = await response.json();
       
       // Convert string dates to Date objects
-      const formattedItems = items.map(item => ({
+      const formattedItems: FoodItem[] = items.map(item => ({
         ...item,
         expiryDate: new Date(item.expiryDate)
       }));
@@ -25,69 +32,88 @@ export function useFoodItems() {
       setFoodItems(formattedItems);
       setError(null);
     } catch (err) {
-      setError('Failed to load food items');
-      console.error(err);
+      console.error('Error fetching food items:', err);
+      setError('食品リストの読み込みに失敗しました');
     } finally {
       setIsLoading(false);
     }
   };
 
   // Add a new food item
-  const addFoodItem = async (name: string, expiryDate: Date) => {
+  const addFoodItem = async (newItem: FoodItem) => {
     try {
-      const newItem = await apiRequest<FoodItem>({
-        url: '/api/food-items',
+      const response = await fetch('/api/food-items', {
         method: 'POST',
-        data: { name, expiryDate }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newItem),
       });
       
-      setFoodItems(prev => [...prev, { ...newItem, expiryDate: new Date(newItem.expiryDate) }]);
-      return true;
+      if (!response.ok) {
+        throw new Error('Failed to add food item');
+      }
+      
+      const addedItem: ApiResponse = await response.json();
+      setFoodItems(prev => [...prev, { 
+        id: addedItem.id, 
+        name: addedItem.name, 
+        expiryDate: new Date(addedItem.expiryDate) 
+      }]);
     } catch (err) {
-      setError('Failed to add food item');
-      console.error(err);
-      return false;
+      console.error('Error adding food item:', err);
+      setError('食品の登録に失敗しました');
     }
   };
 
   // Update an existing food item
-  const updateFoodItem = async (id: string, name: string, expiryDate: Date) => {
+  const updateFoodItem = async (updatedItem: FoodItem) => {
     try {
-      const updatedItem = await apiRequest<FoodItem>({
-        url: `/api/food-items/${id}`,
+      const response = await fetch(`/api/food-items/${updatedItem.id}`, {
         method: 'PUT',
-        data: { name, expiryDate }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedItem),
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to update food item');
+      }
+      
+      const result: ApiResponse = await response.json();
       setFoodItems(prev => 
         prev.map(item => 
-          item.id === id 
-            ? { ...updatedItem, expiryDate: new Date(updatedItem.expiryDate) } 
+          item.id === updatedItem.id 
+            ? { 
+                id: result.id, 
+                name: result.name, 
+                expiryDate: new Date(result.expiryDate) 
+              } 
             : item
         )
       );
-      return true;
     } catch (err) {
-      setError('Failed to update food item');
-      console.error(err);
-      return false;
+      console.error('Error updating food item:', err);
+      setError('食品の更新に失敗しました');
     }
   };
 
   // Delete a food item
   const deleteFoodItem = async (id: string) => {
     try {
-      await apiRequest({
-        url: `/api/food-items/${id}`,
-        method: 'DELETE'
+      const response = await fetch(`/api/food-items/${id}`, {
+        method: 'DELETE',
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to delete food item');
+      }
+      
       setFoodItems(prev => prev.filter(item => item.id !== id));
-      return true;
     } catch (err) {
-      setError('Failed to delete food item');
-      console.error(err);
-      return false;
+      console.error('Error deleting food item:', err);
+      setError('食品の削除に失敗しました');
     }
   };
 
