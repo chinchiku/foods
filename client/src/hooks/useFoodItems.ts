@@ -5,8 +5,10 @@ import { FoodItem } from '@/types';
 interface ApiResponse {
   id: string;
   name: string;
-  expiryDate: string;
+  expiryDate?: string;
+  registrationDate: string;
   locationId?: string;
+  hasNoExpiry?: boolean;
 }
 
 export function useFoodItems() {
@@ -27,7 +29,8 @@ export function useFoodItems() {
       // Convert string dates to Date objects
       const formattedItems: FoodItem[] = items.map(item => ({
         ...item,
-        expiryDate: new Date(item.expiryDate)
+        expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
+        registrationDate: new Date(item.registrationDate)
       }));
       
       setFoodItems(formattedItems);
@@ -59,8 +62,10 @@ export function useFoodItems() {
       setFoodItems(prev => [...prev, { 
         id: addedItem.id, 
         name: addedItem.name, 
-        expiryDate: new Date(addedItem.expiryDate),
-        locationId: addedItem.locationId
+        expiryDate: addedItem.expiryDate ? new Date(addedItem.expiryDate) : undefined,
+        registrationDate: new Date(addedItem.registrationDate),
+        locationId: addedItem.locationId,
+        hasNoExpiry: addedItem.hasNoExpiry
       }]);
     } catch (err) {
       console.error('Error adding food item:', err);

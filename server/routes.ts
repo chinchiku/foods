@@ -40,18 +40,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/food-items", (req: Request, res: Response) => {
-    const { name, expiryDate, locationId } = req.body;
+    const { name, expiryDate, locationId, hasNoExpiry, registrationDate } = req.body;
     
-    if (!name || !expiryDate) {
-      return res.status(400).json({ message: "Name and expiry date are required" });
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    
+    // 期限なしフラグがfalseの場合、期限日が必要
+    if (!hasNoExpiry && !expiryDate) {
+      return res.status(400).json({ message: "Expiry date is required when hasNoExpiry is false" });
     }
     
     const newItem: FoodItem = {
       id: String(nextId++),
       name,
-      expiryDate: new Date(expiryDate),
-      locationId
+      registrationDate: registrationDate ? new Date(registrationDate) : new Date(),
+      locationId,
+      hasNoExpiry: hasNoExpiry || false
     };
+    
+    // 期限ありの場合は期限日を設定
+    if (expiryDate && !hasNoExpiry) {
+      newItem.expiryDate = new Date(expiryDate);
+    }
     
     foodItems.push(newItem);
     res.status(201).json(newItem);
@@ -59,10 +70,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/food-items/:id", (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, expiryDate, locationId } = req.body;
+    const { name, expiryDate, locationId, hasNoExpiry, registrationDate } = req.body;
     
-    if (!name || !expiryDate) {
-      return res.status(400).json({ message: "Name and expiry date are required" });
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    
+    // 期限なしフラグがfalseの場合、期限日が必要
+    if (!hasNoExpiry && !expiryDate) {
+      return res.status(400).json({ message: "Expiry date is required when hasNoExpiry is false" });
     }
     
     const itemIndex = foodItems.findIndex(item => item.id === id);
@@ -71,12 +87,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Food item not found" });
     }
     
+    // 現在の項目を取得
+    const currentItem = foodItems[itemIndex];
+    
     const updatedItem: FoodItem = {
       id,
       name,
-      expiryDate: new Date(expiryDate),
-      locationId
+      // 既存の登録日を保持するか、新しく指定された値を使用
+      registrationDate: registrationDate ? new Date(registrationDate) : 
+                     currentItem.registrationDate || new Date(),
+      locationId,
+      hasNoExpiry: hasNoExpiry || false
     };
+    
+    // 期限ありの場合は期限日を設定
+    if (expiryDate && !hasNoExpiry) {
+      updatedItem.expiryDate = new Date(expiryDate);
+    }
     
     foodItems[itemIndex] = updatedItem;
     res.json(updatedItem);
@@ -182,6 +209,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     res.json(stats);
+  });
+  
+  // データエクスポートのエンドポイント
+  app.get("/api/export", (_req: Request, res: Response) => {
+    try {
+      // 日付をISO文字列に変換して、再度インポートできるようにする
+      const exportData = {
+        foodItems: foodItems.map(item => ({
+          ...item,
+          expiryDate: item.expiryDate ? item.expiryDate.toISOString() : undefined,
+          registrationDate: item.registrationDate ? item.registrationDate.toISOString() : new Date().toISOString(),
+        })),
+        storageLocations
+      };
+      
+      res.json(exportData);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ message: 'エクスポートに失敗しました' });
+    }
+  });
+  
+  // データインポートのエンドポイント
+  app.post("/api/import", (req: Request, res: Response) => {
+    try {
+      const { foodItems: importedFoodItems, storageLocations: importedLocations } = req.body;
+      
+      if (!Array.isArray(importedFoodItems) || !Array.isArray(importedLocations)) {
+        return res.status(400).json({ message: '無効なインポートデータです' });
+      }
+      
+      // インポートされた食品アイテムを変換
+      const parsedFoodItems = importedFoodItems.map(item => ({
+        ...item,
+        // ISO文字列から日付オブジェクトに変換
+        expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
+        registrationDate: item.registrationDate ? new Date(item.registrationDate) : new Date(),
+      }));
+      
+      // 保管場所と食品アイテムを上書き
+      storageLocations.length = 0;
+      storageLocations.push(...importedLocations);
+      
+      foodItems.length = 0;
+      foodItems.push(...parsedFoodItems);
+      
+      res.status(200).json({ message: 'インポートに成功しました' });
+    } catch (error) {
+      console.error('Import error:', error);
+      res.status(500).json({ message: 'インポートに失敗しました' });
+    }
   });
 
   const httpServer = createServer(app);
