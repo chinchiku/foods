@@ -100,17 +100,36 @@ export function useFoodItems() {
       }
       
       const addedItem: ApiResponse = await response.json();
-      setFoodItems(prev => [...prev, { 
+      const updatedItem = { 
         id: addedItem.id, 
         name: addedItem.name, 
         expiryDate: addedItem.expiryDate ? new Date(addedItem.expiryDate) : undefined,
         registrationDate: new Date(addedItem.registrationDate),
         locationId: addedItem.locationId,
         hasNoExpiry: addedItem.hasNoExpiry
-      }]);
+      };
+      
+      const updatedItems = [...foodItems, updatedItem];
+      setFoodItems(updatedItems);
+      // データが変更されたらローカルストレージも更新
+      saveToLocalStorage(updatedItems);
     } catch (err) {
       console.error('Error adding food item:', err);
-      setError('食品の登録に失敗しました');
+      // オフラインの場合でも、ローカルにデータを追加
+      if (!navigator.onLine) {
+        const newId = Date.now().toString();
+        const offlineItem = {
+          ...newItem,
+          id: newId,
+          _offline: true // オフライン作成のマーク
+        };
+        const updatedItems = [...foodItems, offlineItem];
+        setFoodItems(updatedItems);
+        saveToLocalStorage(updatedItems);
+        setError('オフラインモードです。再接続時にサーバーと同期します。');
+      } else {
+        setError('食品の登録に失敗しました');
+      }
     }
   };
 
@@ -130,23 +149,36 @@ export function useFoodItems() {
       }
       
       const result: ApiResponse = await response.json();
-      setFoodItems(prev => 
-        prev.map(item => 
-          item.id === updatedItem.id 
-            ? { 
-                id: result.id, 
-                name: result.name, 
-                expiryDate: result.expiryDate ? new Date(result.expiryDate) : undefined,
-                registrationDate: new Date(result.registrationDate),
-                locationId: result.locationId,
-                hasNoExpiry: result.hasNoExpiry
-              } 
-            : item
-        )
+      const updatedItems = foodItems.map(item => 
+        item.id === updatedItem.id 
+          ? { 
+              id: result.id, 
+              name: result.name, 
+              expiryDate: result.expiryDate ? new Date(result.expiryDate) : undefined,
+              registrationDate: new Date(result.registrationDate),
+              locationId: result.locationId,
+              hasNoExpiry: result.hasNoExpiry
+            } 
+          : item
       );
+      
+      setFoodItems(updatedItems);
+      // データが変更されたらローカルストレージも更新
+      saveToLocalStorage(updatedItems);
     } catch (err) {
       console.error('Error updating food item:', err);
-      setError('食品の更新に失敗しました');
+      
+      // オフラインの場合でも、ローカルでデータを更新
+      if (!navigator.onLine) {
+        const updatedItems = foodItems.map(item => 
+          item.id === updatedItem.id ? { ...updatedItem, _offlineUpdated: true } : item
+        );
+        setFoodItems(updatedItems);
+        saveToLocalStorage(updatedItems);
+        setError('オフラインモードです。再接続時にサーバーと同期します。');
+      } else {
+        setError('食品の更新に失敗しました');
+      }
     }
   };
 
@@ -161,10 +193,24 @@ export function useFoodItems() {
         throw new Error('Failed to delete food item');
       }
       
-      setFoodItems(prev => prev.filter(item => item.id !== id));
+      const updatedItems = foodItems.filter(item => item.id !== id);
+      setFoodItems(updatedItems);
+      // データが変更されたらローカルストレージも更新
+      saveToLocalStorage(updatedItems);
     } catch (err) {
       console.error('Error deleting food item:', err);
-      setError('食品の削除に失敗しました');
+      
+      // オフラインの場合でも、ローカルでデータを削除
+      if (!navigator.onLine) {
+        // 完全に削除するか、削除マークをつけるか
+        // (本実装ではオフラインでの削除を直接行う)
+        const updatedItems = foodItems.filter(item => item.id !== id);
+        setFoodItems(updatedItems);
+        saveToLocalStorage(updatedItems);
+        setError('オフラインモードです。再接続時にサーバーと同期します。');
+      } else {
+        setError('食品の削除に失敗しました');
+      }
     }
   };
 
