@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getExpiryClass, getExpiryTextClass, calculateRemainingDays } from "@/utils/dateUtils";
 import { useStorageLocations } from "@/hooks/useStorageLocations";
+import { CalendarClock, Calendar } from "lucide-react";
 
 interface FoodItemProps {
   item: FoodItemType;
@@ -12,22 +13,34 @@ interface FoodItemProps {
 
 export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
   const { locations } = useStorageLocations();
-  const expiryClass = getExpiryClass(item.expiryDate);
-  const textClass = getExpiryTextClass(item.expiryDate);
-  const remainingDays = calculateRemainingDays(item.expiryDate);
-  const formattedExpiryDate = item.expiryDate.toISOString().split("T")[0];
   
   // 保管場所名を取得
   const locationName = item.locationId 
     ? locations.find(loc => loc.id === item.locationId)?.name || "不明な場所"
     : "未分類";
   
-  // Check if expired for additional styling
-  const isExpired = item.expiryDate < new Date(new Date().setHours(0, 0, 0, 0));
-  const nameClass = isExpired ? "line-through" : "";
+  // ステータスを計算
+  const remainingDays = calculateRemainingDays(item.expiryDate, item.registrationDate, item.hasNoExpiry);
+  
+  // 期限切れかどうかチェック
+  let nameClass = "";
+  let itemBorderClass = "border-l-4 border-green-500";
+  let dateTextClass = "text-slate-600";
+  
+  if (item.hasNoExpiry) {
+    // 期限なし食品の場合、特別なスタイルはなし
+    itemBorderClass = "border-l-4 border-blue-500";
+    dateTextClass = "text-blue-600";
+  } else if (item.expiryDate) {
+    // 期限付き食品の場合
+    const isExpired = item.expiryDate < new Date(new Date().setHours(0, 0, 0, 0));
+    nameClass = isExpired ? "line-through" : "";
+    itemBorderClass = getExpiryClass(item.expiryDate);
+    dateTextClass = getExpiryTextClass(item.expiryDate);
+  }
   
   return (
-    <li className={`flex flex-col bg-white rounded-lg shadow-sm overflow-hidden ${expiryClass}`}>
+    <li className={`flex flex-col bg-white rounded-lg shadow-sm overflow-hidden ${itemBorderClass}`}>
       <div className="p-4 flex justify-between items-start">
         <div className="item-info">
           <div className="flex items-center gap-2 mb-1">
@@ -40,9 +53,21 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
               </Badge>
             )}
           </div>
-          <span className={`item-date block text-sm ${textClass}`}>
-            期限: {formattedExpiryDate} ({remainingDays})
-          </span>
+          <div className={`item-date flex items-center gap-1 text-sm ${dateTextClass}`}>
+            {item.hasNoExpiry ? (
+              <>
+                <CalendarClock className="h-3.5 w-3.5" />
+                <span>登録日: {item.registrationDate.toISOString().split("T")[0]} ({remainingDays})</span>
+              </>
+            ) : item.expiryDate ? (
+              <>
+                <Calendar className="h-3.5 w-3.5" />
+                <span>期限: {item.expiryDate.toISOString().split("T")[0]} ({remainingDays})</span>
+              </>
+            ) : (
+              <span>期限情報なし</span>
+            )}
+          </div>
         </div>
         <div className="item-actions flex">
           <Button

@@ -233,11 +233,53 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
             ) : foodError ? (
               <div className="text-center text-red-500 py-4">{foodError}</div>
             ) : (
-              <FoodItemList
-                foodItems={foodItems}
-                onEdit={onEdit}
-                onDelete={setDeleteItemId}
-              />
+              <div>
+                {/* 期限が登録されている食品 */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                    期限登録済みの食品
+                  </h3>
+                  {foodItems.filter(item => !item.hasNoExpiry && item.expiryDate).length > 0 ? (
+                    <FoodItemList
+                      foodItems={foodItems
+                        .filter(item => !item.hasNoExpiry && item.expiryDate)
+                        .sort((a, b) => {
+                          // 期限が近い順にソート
+                          const dateA = new Date(a.expiryDate || 0);
+                          const dateB = new Date(b.expiryDate || 0);
+                          return dateA.getTime() - dateB.getTime();
+                        })}
+                      onEdit={onEdit}
+                      onDelete={setDeleteItemId}
+                    />
+                  ) : (
+                    <p className="text-gray-500 py-4 text-center">期限が登録されている食品はありません</p>
+                  )}
+                </div>
+                
+                {/* 期限なし食品（経過日数表示） */}
+                <div className="mt-8 pt-4 border-t">
+                  <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                    期限登録なしの食品（経過日数）
+                  </h3>
+                  {foodItems.filter(item => item.hasNoExpiry).length > 0 ? (
+                    <FoodItemList
+                      foodItems={foodItems
+                        .filter(item => item.hasNoExpiry)
+                        .sort((a, b) => {
+                          // 登録が古い順にソート（登録日が古いものが上に）
+                          const dateA = new Date(a.registrationDate || 0);
+                          const dateB = new Date(b.registrationDate || 0);
+                          return dateA.getTime() - dateB.getTime();
+                        })}
+                      onEdit={onEdit}
+                      onDelete={setDeleteItemId}
+                    />
+                  ) : (
+                    <p className="text-gray-500 py-4 text-center">期限なしの食品はありません</p>
+                  )}
+                </div>
+              </div>
             )}
           </TabsContent>
           
@@ -250,11 +292,53 @@ export default function ListPage({ onEdit, onDeleteConfirm }: ListPageProps) {
               ) : foodError ? (
                 <div className="text-center text-red-500 py-4">{foodError}</div>
               ) : (
-                <FoodItemList
-                  foodItems={foodItems.filter(item => item.locationId === location.id)}
-                  onEdit={onEdit}
-                  onDelete={setDeleteItemId}
-                />
+                <div>
+                  {/* 期限が登録されている食品 */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                      期限登録済みの食品
+                    </h3>
+                    {foodItems.filter(item => !item.hasNoExpiry && item.expiryDate && item.locationId === location.id).length > 0 ? (
+                      <FoodItemList
+                        foodItems={foodItems
+                          .filter(item => !item.hasNoExpiry && item.expiryDate && item.locationId === location.id)
+                          .sort((a, b) => {
+                            // 期限が近い順にソート
+                            const dateA = new Date(a.expiryDate || 0);
+                            const dateB = new Date(b.expiryDate || 0);
+                            return dateA.getTime() - dateB.getTime();
+                          })}
+                        onEdit={onEdit}
+                        onDelete={setDeleteItemId}
+                      />
+                    ) : (
+                      <p className="text-gray-500 py-4 text-center">期限が登録されている食品はありません</p>
+                    )}
+                  </div>
+                  
+                  {/* 期限なし食品（経過日数表示） */}
+                  <div className="mt-8 pt-4 border-t">
+                    <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                      期限登録なしの食品（経過日数）
+                    </h3>
+                    {foodItems.filter(item => item.hasNoExpiry && item.locationId === location.id).length > 0 ? (
+                      <FoodItemList
+                        foodItems={foodItems
+                          .filter(item => item.hasNoExpiry && item.locationId === location.id)
+                          .sort((a, b) => {
+                            // 登録が古い順にソート（登録日が古いものが上に）
+                            const dateA = new Date(a.registrationDate || 0);
+                            const dateB = new Date(b.registrationDate || 0);
+                            return dateA.getTime() - dateB.getTime();
+                          })}
+                        onEdit={onEdit}
+                        onDelete={setDeleteItemId}
+                      />
+                    ) : (
+                      <p className="text-gray-500 py-4 text-center">期限なしの食品はありません</p>
+                    )}
+                  </div>
+                </div>
               )}
             </TabsContent>
           ))}
