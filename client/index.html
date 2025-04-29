@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>食品期限管理アプリ</title>
+    
+    <!-- PWA関連メタタグ -->
+    <meta name="description" content="食品の期限を管理するためのアプリ">
+    <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    
+    <!-- iOSのPWA対応 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="食品管理">
+    
+    <!-- フォント -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=M+PLUS+Rounded+1c:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -13,5 +26,49 @@
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    
+    <!-- サービスワーカーの登録 -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker 登録成功: ', registration.scope);
+            })
+            .catch(err => {
+              console.log('ServiceWorker 登録失敗: ', err);
+            });
+        });
+      }
+    </script>
+    
+    <!-- PWAインストールプロンプト -->
+    <script>
+      let deferredPrompt;
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // インストールプロンプトを表示せずに保存
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // カスタムインストールUIを表示するロジックを追加できます
+        // たとえば通知やボタンを表示する
+      });
+      
+      // カスタムインストールボタンの処理（必要に応じて実装）
+      function installApp() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('アプリがインストールされました');
+            } else {
+              console.log('インストールがキャンセルされました');
+            }
+            deferredPrompt = null;
+          });
+        }
+      }
+    </script>
   </body>
 </html>
