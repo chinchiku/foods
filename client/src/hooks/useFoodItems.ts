@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FoodItem } from '@/types';
 
+// ローカルストレージキー
+const FOOD_ITEMS_STORAGE_KEY = 'food-expiry-app-items';
+
 // APIから返ってくる食品アイテムの型定義
 interface ApiResponse {
   id: string;
@@ -16,9 +19,38 @@ export function useFoodItems() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ローカルストレージからデータをロード
+  const loadFromLocalStorage = (): FoodItem[] => {
+    try {
+      const stored = localStorage.getItem(FOOD_ITEMS_STORAGE_KEY);
+      if (stored) {
+        const items = JSON.parse(stored);
+        // 日付の復元
+        return items.map((item: any) => ({
+          ...item,
+          expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
+          registrationDate: new Date(item.registrationDate)
+        }));
+      }
+    } catch (e) {
+      console.error('Error loading from localStorage:', e);
+    }
+    return [];
+  };
+
+  // ローカルストレージにデータを保存
+  const saveToLocalStorage = (items: FoodItem[]) => {
+    try {
+      localStorage.setItem(FOOD_ITEMS_STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error('Error saving to localStorage:', e);
+    }
+  };
+
   // Fetch food items
   const fetchFoodItems = async () => {
     setIsLoading(true);
+    
     try {
       const response = await fetch('/api/food-items');
       if (!response.ok) {
@@ -34,10 +66,19 @@ export function useFoodItems() {
       }));
       
       setFoodItems(formattedItems);
+      // オンラインでロードに成功したらローカルストレージに保存
+      saveToLocalStorage(formattedItems);
       setError(null);
     } catch (err) {
       console.error('Error fetching food items:', err);
       setError('食品リストの読み込みに失敗しました');
+      
+      // APIからロードに失敗した場合、ローカルストレージからロード
+      const storedItems = loadFromLocalStorage();
+      if (storedItems.length > 0) {
+        setFoodItems(storedItems);
+        setError('オフラインモードです。ローカルに保存されたデータを表示しています。');
+      }
     } finally {
       setIsLoading(false);
     }
