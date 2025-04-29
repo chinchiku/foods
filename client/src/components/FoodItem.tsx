@@ -1,5 +1,6 @@
 import { FoodItem as FoodItemType } from "@/types";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getExpiryClass, getExpiryTextClass, calculateRemainingDays } from "@/utils/dateUtils";
 
 interface FoodItemProps {
@@ -22,9 +23,16 @@ export default function FoodItem({ item, onEdit, onDelete }: FoodItemProps) {
     <li className={`flex flex-col bg-white rounded-lg shadow-sm overflow-hidden ${expiryClass}`}>
       <div className="p-4 flex justify-between items-start">
         <div className="item-info">
-          <span className={`item-name text-lg font-medium ${nameClass}`}>
-            {item.name}
-          </span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`item-name text-lg font-medium ${nameClass}`}>
+              {item.name}
+            </span>
+            {item.location && (
+              <Badge variant="outline" className="bg-slate-100 text-xs">
+                {item.location}
+              </Badge>
+            )}
+          </div>
           <span className={`item-date block text-sm ${textClass}`}>
             期限: {formattedExpiryDate} ({remainingDays})
           </span>

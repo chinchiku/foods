@@ -11,11 +11,19 @@ let nextId = 1;
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   app.get("/api/food-items", (req: Request, res: Response) => {
+    // クエリパラメータから特定の保管場所が指定されている場合はフィルタリング
+    const location = req.query.location as string | undefined;
+    
+    if (location) {
+      const filteredItems = foodItems.filter(item => item.location === location);
+      return res.json(filteredItems);
+    }
+    
     res.json(foodItems);
   });
 
   app.post("/api/food-items", (req: Request, res: Response) => {
-    const { name, expiryDate } = req.body;
+    const { name, expiryDate, location } = req.body;
     
     if (!name || !expiryDate) {
       return res.status(400).json({ message: "Name and expiry date are required" });
@@ -25,6 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       id: String(nextId++),
       name,
       expiryDate: new Date(expiryDate),
+      location
     };
     
     foodItems.push(newItem);
@@ -33,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/food-items/:id", (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, expiryDate } = req.body;
+    const { name, expiryDate, location } = req.body;
     
     if (!name || !expiryDate) {
       return res.status(400).json({ message: "Name and expiry date are required" });
@@ -49,6 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       id,
       name,
       expiryDate: new Date(expiryDate),
+      location
     };
     
     foodItems[itemIndex] = updatedItem;
@@ -65,6 +75,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     foodItems.splice(itemIndex, 1);
     res.status(204).end();
+  });
+
+  // 保管場所ごとの食品アイテム数を取得するエンドポイント
+  app.get("/api/location-stats", (req: Request, res: Response) => {
+    const stats: Record<string, number> = {};
+    
+    foodItems.forEach(item => {
+      const location = item.location || "未分類";
+      stats[location] = (stats[location] || 0) + 1;
+    });
+    
+    res.json(stats);
   });
 
   const httpServer = createServer(app);

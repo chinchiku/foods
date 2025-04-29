@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { FoodItem } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FoodItem, storageLocations } from "@/types";
 
 interface FoodItemFormProps {
-  onSubmit: (name: string, expiryDate: Date) => void;
+  onSubmit: (name: string, expiryDate: Date, location: string) => void;
   editingItem: FoodItem | null;
   onCancelEdit: () => void;
 }
@@ -18,6 +19,7 @@ export default function FoodItemForm({
 }: FoodItemFormProps) {
   const [name, setName] = useState("");
   const [expiryDateString, setExpiryDateString] = useState("");
+  const [location, setLocation] = useState(storageLocations[0]);
 
   // Set today's date as default when the component mounts
   useEffect(() => {
@@ -35,6 +37,9 @@ export default function FoodItemForm({
     if (editingItem) {
       setName(editingItem.name);
       setExpiryDateString(editingItem.expiryDate.toISOString().split("T")[0]);
+      if (editingItem.location) {
+        setLocation(editingItem.location);
+      }
     }
   }, [editingItem]);
 
@@ -47,7 +52,7 @@ export default function FoodItemForm({
     }
     
     const expiryDate = new Date(expiryDateString);
-    onSubmit(name, expiryDate);
+    onSubmit(name, expiryDate, location);
     
     // Reset form after submission
     setName("");
@@ -59,6 +64,7 @@ export default function FoodItemForm({
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const dd = String(today.getDate()).padStart(2, "0");
       setExpiryDateString(`${yyyy}-${mm}-${dd}`);
+      setLocation(storageLocations[0]); // デフォルトの保管場所にリセット
     }
   };
 
@@ -92,6 +98,24 @@ export default function FoodItemForm({
               required
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="location" className="text-sm font-medium text-slate-700">
+              保管場所
+            </Label>
+            <Select value={location} onValueChange={setLocation}>
+              <SelectTrigger id="location" className="w-full">
+                <SelectValue placeholder="保管場所を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {storageLocations.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {loc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex gap-2">

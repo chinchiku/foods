@@ -4,8 +4,9 @@ import FoodItemList from "@/components/FoodItemList";
 import StatusLegend from "@/components/StatusLegend";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 import { useFoodItems } from "@/hooks/useFoodItems";
-import { FoodItem } from "@/types";
+import { FoodItem, storageLocations } from "@/types";
 import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const {
@@ -19,6 +20,7 @@ export default function Home() {
 
   const [editingItem, setEditingItem] = useState<FoodItem | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
   const handleStartEdit = (item: FoodItem) => {
     setEditingItem(item);
@@ -28,12 +30,13 @@ export default function Home() {
     setEditingItem(null);
   };
 
-  const handleSubmit = (name: string, expiryDate: Date) => {
+  const handleSubmit = (name: string, expiryDate: Date, location: string) => {
     if (editingItem) {
       updateFoodItem({
         ...editingItem,
         name,
         expiryDate,
+        location,
       });
       setEditingItem(null);
     } else {
@@ -41,6 +44,7 @@ export default function Home() {
         id: Date.now().toString(),
         name,
         expiryDate,
+        location,
       });
     }
   };
@@ -51,6 +55,11 @@ export default function Home() {
       setDeleteItemId(null);
     }
   };
+
+  // 保管場所でフィルタリングされた食品リスト
+  const filteredFoodItems = selectedLocation
+    ? foodItems.filter(item => item.location === selectedLocation)
+    : foodItems;
 
   return (
     <div className="max-w-md mx-auto p-4 pb-20">
@@ -68,21 +77,54 @@ export default function Home() {
       
       <StatusLegend />
       
-      <h2 className="text-xl font-bold text-slate-800 mb-4">登録済み食品一覧</h2>
-      
-      {isLoading ? (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-500 py-4">{error}</div>
-      ) : (
-        <FoodItemList
-          foodItems={foodItems}
-          onEdit={handleStartEdit}
-          onDelete={setDeleteItemId}
-        />
-      )}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">登録済み食品一覧</h2>
+        
+        <Tabs defaultValue="all" onValueChange={(value) => setSelectedLocation(value === "all" ? null : value)}>
+          <TabsList className="w-full flex overflow-x-auto mb-4">
+            <TabsTrigger value="all" className="flex-1">すべて</TabsTrigger>
+            {storageLocations.map(location => (
+              <TabsTrigger key={location} value={location} className="flex-1">
+                {location}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          <TabsContent value="all">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-center text-red-500 py-4">{error}</div>
+            ) : (
+              <FoodItemList
+                foodItems={foodItems}
+                onEdit={handleStartEdit}
+                onDelete={setDeleteItemId}
+              />
+            )}
+          </TabsContent>
+          
+          {storageLocations.map(location => (
+            <TabsContent key={location} value={location}>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : error ? (
+                <div className="text-center text-red-500 py-4">{error}</div>
+              ) : (
+                <FoodItemList
+                  foodItems={foodItems.filter(item => item.location === location)}
+                  onEdit={handleStartEdit}
+                  onDelete={setDeleteItemId}
+                />
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
       
       {deleteItemId && (
         <DeleteConfirmation
